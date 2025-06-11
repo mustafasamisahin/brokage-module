@@ -16,30 +16,30 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class CustomerController {
-    
+
     private final CustomerService customerService;
-    
+
     @PostMapping
     public ResponseEntity<Customer> createCustomer(@Valid @RequestBody Customer customer) {
         log.debug("REST request to create customer: {}", customer);
         Customer createdCustomer = customerService.createCustomer(customer);
         return new ResponseEntity<>(createdCustomer, HttpStatus.CREATED);
     }
-    
+
     @GetMapping("/{customerId}")
     public ResponseEntity<Customer> getCustomer(@PathVariable Long customerId) {
         log.debug("REST request to get customer: {}", customerId);
         Customer customer = customerService.getCustomerById(customerId);
         return ResponseEntity.ok(customer);
     }
-    
+
     @GetMapping
     public ResponseEntity<List<Customer>> getAllCustomers() {
         log.debug("REST request to get all customers");
         List<Customer> customers = customerService.getAllCustomers();
         return ResponseEntity.ok(customers);
     }
-    
+
     @PutMapping("/{customerId}")
     public ResponseEntity<Customer> updateCustomer(
             @PathVariable Long customerId,
@@ -48,7 +48,7 @@ public class CustomerController {
         Customer updatedCustomer = customerService.updateCustomer(customerId, customer);
         return ResponseEntity.ok(updatedCustomer);
     }
-    
+
     @DeleteMapping("/{customerId}")
     public ResponseEntity<Void> deleteCustomer(@PathVariable Long customerId) {
         log.debug("REST request to delete customer: {}", customerId);

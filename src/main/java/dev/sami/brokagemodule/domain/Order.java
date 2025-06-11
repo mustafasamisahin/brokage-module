@@ -36,12 +36,12 @@ public class Order {
     private OrderSide orderSide;
     
     @NotNull
-    @DecimalMin(value = "0.01", inclusive = true)
+    @DecimalMin(value = "0.01")
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal size;
     
     @NotNull
-    @DecimalMin(value = "0.01", inclusive = true)
+    @DecimalMin(value = "0.01")
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal price;
     

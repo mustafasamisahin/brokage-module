@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
     @UniqueConstraint(columnNames = {"customer_id", "asset_name"})
 })
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Asset {
@@ -23,9 +25,8 @@ public class Asset {
     private Long id;
     
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    @Column(name = "customer_id")
+    private Long customerId;
     
     @NotBlank
     @Column(name = "asset_name", nullable = false)
@@ -38,11 +39,4 @@ public class Asset {
     @NotNull
     @Column(name = "usable_size", nullable = false)
     private BigDecimal usableSize;
-    
-    public Asset(Customer customer, String assetName, BigDecimal size, BigDecimal usableSize) {
-        this.customer = customer;
-        this.assetName = assetName;
-        this.size = size;
-        this.usableSize = usableSize;
-    }
 } 

@@ -29,4 +29,7 @@ public class Customer {
     @NotBlank
     @Column(name = "national_identity_number", nullable = false, unique = true)
     private String nationalIdentityNumber;
+
+    @Column(name = "address")
+    private String address;
 } 

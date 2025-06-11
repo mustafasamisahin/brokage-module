@@ -38,19 +38,11 @@ public class OrderController {
     @GetMapping("/customer/{customerId}")
     public ResponseEntity<List<OrderResponse>> getOrdersByCustomer(
             @PathVariable Long customerId,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) OrderStatus status) {
         
-        log.info("Getting orders for customer: {}, startDate: {}, endDate: {}, status: {}", 
-                customerId, startDate, endDate, status);
+        log.info("Getting orders for customer: {}, status: {}", customerId, status);
         
-        List<Order> orders;
-        if (startDate != null && endDate != null) {
-            orders = orderService.getOrdersByCustomerIdAndDateRange(customerId, startDate, endDate, status);
-        } else {
-            orders = orderService.getOrdersByCustomerId(customerId);
-        }
+        List<Order> orders = orderService.getOrdersByCustomerId(customerId);
         
         List<OrderResponse> responses = orders.stream()
                 .map(orderMapper::toOrderResponse)
@@ -81,6 +73,17 @@ public class OrderController {
                 .map(orderMapper::toOrderResponse)
                 .collect(Collectors.toList());
         
+        return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<OrderResponse>> getAllOrders() {
+        log.info("Getting all orders");
+        List<Order> orders = orderService.getAllOrders();
+        List<OrderResponse> responses = orders.stream()
+                .map(orderMapper::toOrderResponse)
+                .collect(Collectors.toList());
+
         return ResponseEntity.ok(responses);
     }
 

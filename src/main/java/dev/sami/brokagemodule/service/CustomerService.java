@@ -1,17 +1,14 @@
 package dev.sami.brokagemodule.service;
 
-import dev.sami.brokagemodule.domain.Asset;
 import dev.sami.brokagemodule.domain.Customer;
 import dev.sami.brokagemodule.exception.CustomerNotFoundException;
 import dev.sami.brokagemodule.exception.DuplicateCustomerException;
-import dev.sami.brokagemodule.repository.AssetRepository;
 import dev.sami.brokagemodule.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -19,92 +16,57 @@ import java.util.List;
 @Slf4j
 @Transactional
 public class CustomerService {
-    
+
     private final CustomerRepository customerRepository;
-    private final AssetRepository assetRepository;
-    
+
     public Customer createCustomer(Customer customer) {
         log.debug("Creating new customer: {}", customer);
-        
+
         if (customerRepository.existsByCustomerId(customer.getCustomerId())) {
             throw new DuplicateCustomerException("Customer with ID " + customer.getCustomerId() + " already exists");
         }
-        
+
         if (customerRepository.existsByNationalIdentityNumber(customer.getNationalIdentityNumber())) {
-            throw new DuplicateCustomerException("Customer with national identity number " + 
-                customer.getNationalIdentityNumber() + " already exists");
+            throw new DuplicateCustomerException("Customer with national identity number " +
+                    customer.getNationalIdentityNumber() + " already exists");
         }
-        
+
         return customerRepository.save(customer);
     }
-    
+
     public Customer getCustomerById(Long customerId) {
         log.debug("Getting customer with ID: {}", customerId);
         return customerRepository.findByCustomerId(customerId)
                 .orElseThrow(() -> new CustomerNotFoundException("Customer not found with ID: " + customerId));
     }
-    
+
     public List<Customer> getAllCustomers() {
         log.debug("Getting all customers");
         return customerRepository.findAll();
     }
-    
+
     public Customer updateCustomer(Long customerId, Customer updatedCustomer) {
         log.debug("Updating customer with ID: {}", customerId);
-        
+
         Customer existingCustomer = getCustomerById(customerId);
-        
+
         if (!existingCustomer.getNationalIdentityNumber().equals(updatedCustomer.getNationalIdentityNumber()) &&
-            customerRepository.existsByNationalIdentityNumber(updatedCustomer.getNationalIdentityNumber())) {
+                customerRepository.existsByNationalIdentityNumber(updatedCustomer.getNationalIdentityNumber())) {
             throw new DuplicateCustomerException("National identity number already in use");
         }
-        
+
         existingCustomer.setName(updatedCustomer.getName());
         existingCustomer.setSurname(updatedCustomer.getSurname());
         existingCustomer.setNationalIdentityNumber(updatedCustomer.getNationalIdentityNumber());
-        
+
         return customerRepository.save(existingCustomer);
     }
-    
+
     public void deleteCustomer(Long customerId) {
         log.debug("Deleting customer with ID: {}", customerId);
         if (!customerRepository.existsByCustomerId(customerId)) {
             throw new CustomerNotFoundException("Customer not found with ID: " + customerId);
         }
         customerRepository.deleteByCustomerId(customerId);
-    }
-    
-    public List<Asset> getCustomerAssets(Long customerId) {
-        log.debug("Getting assets for customer: {}", customerId);
-        Customer customer = getCustomerById(customerId);
-        return assetRepository.findByCustomer(customer);
-    }
-    
-    public Asset getCustomerAsset(Long customerId, String assetName) {
-        log.debug("Getting asset {} for customer: {}", assetName, customerId);
-        Customer customer = getCustomerById(customerId);
-        return assetRepository.findByCustomerAndAssetName(customer, assetName)
-                .orElseThrow(() -> new RuntimeException(
-                        String.format("Asset %s not found for customer %d", assetName, customerId)));
-    }
-    
-    public boolean hasEnoughAsset(Long customerId, String assetName, BigDecimal requiredAmount) {
-        try {
-            Asset asset = getCustomerAsset(customerId, assetName);
-            return asset.getUsableSize().compareTo(requiredAmount) >= 0;
-        } catch (RuntimeException e) {
-            return false;
-        }
-    }
-    
-    public void ensureTryAssetExists(Long customerId, BigDecimal initialAmount) {
-        log.debug("Ensuring TRY asset exists for customer: {}", customerId);
-        Customer customer = getCustomerById(customerId);
-        
-        if (assetRepository.findByCustomerAndAssetName(customer, "TRY").isEmpty()) {
-            Asset tryAsset = new Asset(customer, "TRY", initialAmount, initialAmount);
-            assetRepository.save(tryAsset);
-            log.info("Created TRY asset for customer {} with initial amount: {}", customerId, initialAmount);
-        }
     }
 } 
