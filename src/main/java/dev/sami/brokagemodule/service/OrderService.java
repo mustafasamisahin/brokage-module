@@ -101,16 +101,19 @@ public class OrderService {
             throw new CustomerNotFoundException("Customer not found");
         }
 
-        if (assetService.getAssetByCustomerAndName(request.getCustomerId(), request.getAssetName()) == null) {
-            throw new AssetNotFoundException("Asset not found");
-        }
-
         if (request.getSide() == OrderSide.BUY) {
+            if (assetService.getAssetByCustomerAndName(request.getCustomerId(), request.getAssetName()) == null) {
+                assetService.createOrUpdateAsset(request.getCustomerId(), request.getAssetName(), BigDecimal.ZERO, BigDecimal.ZERO);
+            }
             BigDecimal totalCost = request.getSize().multiply(request.getPrice());
             if (assetService.isAssetInsufficient(request.getCustomerId(), "TRY", totalCost)) {
                 throw new InsufficientFundsException("Insufficient TRY balance for purchase. Required: " + totalCost);
             }
         } else {
+            if ("TRY".equals(request.getAssetName())) {
+                throw new IllegalArgumentException("TRY asset cant be sold");
+            }
+
             if (assetService.isAssetInsufficient(request.getCustomerId(), request.getAssetName(), request.getSize())) {
                 throw new InsufficientFundsException("Insufficient " + request.getAssetName() + " balance for sale. Required: " + request.getSize());
             }
