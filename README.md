@@ -1,190 +1,205 @@
 # brokage Module
 
-A Spring Boot application for managing stock orders in a brokage firm. This application allows employees to create, list, cancel, and match stock orders for customers.
+A Spring Boot application for managing stock orders in a brokerage firm. The application allows employees to create, list, cancel, and match buy/sell stock orders for customers. It also tracks asset balances for each customer.
 
 ## Features
 
-- **Create Order**: Create new buy/sell orders for customers
-- **List Orders**: List orders by customer and date range with optional status filtering
-- **Cancel Order**: Cancel pending orders (only PENDING orders can be cancelled)
-- **List Assets**: List customer assets and their available balances
-- **Match Orders**: Admin functionality to match pending orders
+- **Order Creation**: Create BUY/SELL orders for assets
+- **Order Listing**: Retrieve customer orders with optional filtering by date and status
+- **Order Cancellation**: Cancel only `PENDING` orders
+- **Order Matching**: Match BUY and SELL orders manually (admin)
+- **Asset Lookup**: Query customer's total and available balances for any asset
+- **Pending Orders**: Retrieve unmatched orders across all customers
 
-## Technology Stack
+## Tech Stack
 
 - Java 17
 - Spring Boot 3.5.0
 - Spring Data JPA
 - Spring Security
+- Lombok
 - H2 Database
 - Maven
-- Lombok
 
 ## Prerequisites
 
-- Java 17 or higher
+- Java 17+
 - Maven 3.6+
 
-## Getting Started
+## Running the App
 
-### Build the Application
-
-```bash
-./mvnw clean compile
-```
-
-### Run Tests
+### Build
 
 ```bash
-./mvnw test
+./mvnw clean install
 ```
 
-### Run the Application
+### Run
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-The application will start on `http://localhost:8080`
+App runs on: `http://localhost:8080`
 
-### Authentication
+## Dockerization
 
-All API endpoints require basic authentication:
+You can also run the application using Docker.
+
+### Build the Docker image
+
+```bash
+docker build -t brokage-module .
+```
+
+### Run the Docker container
+
+```bash
+docker run -p 8080:8080 brokage-module
+```
+
+## Authentication
+
+All endpoints require Basic Auth:
+
 - **Username**: `admin`
 - **Password**: `admin123`
 
-## API Endpoints
+## API Overview
 
-### Order Management
+### Order APIs
 
 #### Create Order
+
 ```http
 POST /api/orders
-Content-Type: application/json
-Authorization: Basic admin:admin123
+```
 
+Request Body:
+
+```json
 {
-    "customerId": 1,
-    "assetName": "AAPL",
-    "side": "BUY",
-    "size": 10,
-    "price": 150.00
+  "customerId": 1,
+  "assetName": "AAPL",
+  "side": "BUY",
+  "size": 10,
+  "price": 150.00
 }
 ```
 
-#### List Orders by Customer
+#### List Customer Orders
+
 ```http
 GET /api/orders/customer/{customerId}
-GET /api/orders/customer/{customerId}?startDate=2024-01-01&endDate=2024-01-31&status=PENDING
-Authorization: Basic admin:admin123
+GET /api/orders/customer/{customerId}?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&status=PENDING
 ```
 
 #### Cancel Order
+
 ```http
 DELETE /api/orders/{orderId}
-Authorization: Basic admin:admin123
 ```
 
-#### Match Order (Admin only)
+#### Match Order
+
 ```http
 POST /api/orders/{orderId}/match
-Authorization: Basic admin:admin123
 ```
 
-#### Get Pending Orders
+#### Get All Pending Orders
+
 ```http
 GET /api/orders/pending
-Authorization: Basic admin:admin123
 ```
 
-### Asset Management
+### Asset APIs
 
 #### List Customer Assets
+
 ```http
 GET /api/assets/customer/{customerId}
-Authorization: Basic admin:admin123
 ```
 
 #### Get Specific Asset
+
 ```http
 GET /api/assets/customer/{customerId}/asset/{assetName}
-Authorization: Basic admin:admin123
 ```
 
 ## Business Logic
 
-### Order Types
-- **BUY**: Purchase assets using TRY currency
-- **SELL**: Sell assets to receive TRY currency
+### Order Sides
+
+- **BUY**: Spend TRY to buy assets
+- **SELL**: Sell owned assets to receive TRY
 
 ### Order Status
-- **PENDING**: Order created and waiting to be matched
-- **MATCHED**: Order has been executed
-- **CANCELED**: Order has been cancelled
 
-### Asset Management
-- All orders are executed against TRY (Turkish Lira)
-- When creating a BUY order, the system checks if the customer has enough TRY balance
-- When creating a SELL order, the system checks if the customer has enough of the asset to sell
-- Assets are reserved when orders are created and released when orders are cancelled
-- When orders are matched, the actual asset transfers occur
+- `PENDING`: Awaiting match
+- `MATCHED`: Executed
+- `CANCELED`: Cancelled before execution
 
-### Initial Setup
-- When a customer places their first order, a TRY asset is automatically created with an initial balance of 100,000 TRY
+### Asset Flow
 
-## Database
+- All assets are traded against **TRY**
+- On BUY: Checks TRY balance → reserves funds
+- On SELL: Checks asset balance → reserves quantity
+- Reserved funds/assets released on cancellation
+- On MATCH: Asset quantities and TRY balances are transferred
 
-The application uses H2 in-memory database. You can access the H2 console at:
-- URL: `http://localhost:8080/h2-console`
+### Auto-Balance Initialization
+
+- New customers receive a default `TRY` asset with `100,000` balance upon first order placement
+
+## H2 Console
+
+- Web UI: `http://localhost:8080/h2-console`
 - JDBC URL: `jdbc:h2:mem:brokage-db`
 - Username: `sa`
-- Password: (empty)
+- Password: *(empty)*
 
 ## Testing
 
-The application includes:
-- Unit tests for service layer logic
-- Integration tests for REST endpoints
-- Comprehensive test coverage for order creation, cancellation, and matching
-
-Run tests with:
 ```bash
 ./mvnw test
 ```
 
-## Example Usage
+Includes:
 
-1. **Create a BUY order**:
-   ```bash
-   curl -X POST http://localhost:8080/api/orders \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Basic YWRtaW46YWRtaW4xMjM=" \
-     -d '{
-       "customerId": 1,
-       "assetName": "AAPL",
-       "side": "BUY",
-       "size": 10,
-       "price": 150.00
-     }'
-   ```
+- Unit tests for core business logic
+- Integration tests for controllers and services
 
-2. **List orders for a customer**:
-   ```bash
-   curl -X GET http://localhost:8080/api/orders/customer/1 \
-     -H "Authorization: Basic YWRtaW46YWRtaW4xMjM="
-   ```
+## Curl Examples
 
-3. **Check customer assets**:
-   ```bash
-   curl -X GET http://localhost:8080/api/assets/customer/1 \
-     -H "Authorization: Basic YWRtaW46YWRtaW4xMjM="
-   ```
+### Create Order
 
-4. **Match an order**:
-   ```bash
-   curl -X POST http://localhost:8080/api/orders/1/match \
-     -H "Authorization: Basic YWRtaW46YWRtaW4xMjM="
-   ```
+```bash
+curl -X POST http://localhost:8080/api/orders \
+ -H "Content-Type: application/json" \
+ -H "Authorization: Basic YWRtaW46YWRtaW4xMjM=" \
+ -d '{"customerId":1,"assetName":"AAPL","side":"BUY","size":10,"price":150}'
+```
+
+### List Orders
+
+```bash
+curl -X GET http://localhost:8080/api/orders/customer/1 \
+ -H "Authorization: Basic YWRtaW46YWRtaW4xMjM="
+```
+
+### Check Assets
+
+```bash
+curl -X GET http://localhost:8080/api/assets/customer/1 \
+ -H "Authorization: Basic YWRtaW46YWRtaW4xMjM="
+```
+
+### Match Order
+
+```bash
+curl -X POST http://localhost:8080/api/orders/1/match \
+ -H "Authorization: Basic YWRtaW46YWRtaW4xMjM="
+```
 
 ## Project Structure
 
@@ -192,28 +207,28 @@ Run tests with:
 src/
 ├── main/
 │   ├── java/dev/sami/brokagemodule/
-│   │   ├── controller/         # REST controllers
-│   │   ├── domain/            # Entity classes
-│   │   ├── dto/               # Data Transfer Objects
-│   │   ├── exception/         # Custom exceptions
-│   │   ├── mapper/            # Object mapping utilities
-│   │   ├── repository/        # JPA repositories
-│   │   ├── service/           # Business logic
-│   │   └── config/           # Configuration classes
+│   │   ├── controller/      # REST Controllers (Orders, Assets)
+│   │   ├── domain/          # JPA Entities (Order, Asset)
+│   │   ├── dto/             # Request/Response DTOs
+│   │   ├── exception/       # Custom Exceptions & Handlers
+│   │   ├── mapper/          # Entity ↔ DTO Mapping
+│   │   ├── repository/      # JPA Repositories
+│   │   ├── service/         # Business Services (OrderService, AssetService)
+│   │   └── config/          # Spring Security and App Config
 │   └── resources/
 │       └── application.properties
 └── test/
-    ├── java/                  # Test classes
+    ├── java/                # Unit and Integration Tests
     └── resources/
         └── application-test.properties
 ```
 
 ## Error Handling
 
-The application includes comprehensive error handling:
-- Validation errors for invalid input
-- Business logic errors (insufficient funds, invalid order status)
-- Not found errors for non-existent resources
-- Generic error handling for unexpected exceptions
+- **400**: Validation or business rule errors (e.g. insufficient funds)
+- **404**: Resource not found
+- **409**: Conflicts (e.g. attempting to cancel a non-pending order)
+- **500**: Unexpected server errors
 
-All errors return appropriate HTTP status codes and descriptive error messages. 
+All responses include descriptive error messages.
+
