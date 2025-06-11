@@ -1,0 +1,12 @@
+target/
+.git/
+.idea/
+.vscode/
+HELP.md
+README.md
+.gitignore
+.gitattributes
+mvnw
+mvnw.cmd
+pom.xml.bak
+src/test/ 
